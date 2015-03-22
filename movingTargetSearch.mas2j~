@@ -1,0 +1,13 @@
+/* Jason Project */
+
+MAS movingTargetSearch {
+    infrastructure: Centralised
+
+    environment: GridMovingTarget()
+
+    agents:
+		  agent;
+      target;
+}
+
+

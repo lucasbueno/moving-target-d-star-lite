@@ -1,0 +1,46 @@
+
+
+/* Crencas e regras iniciais */
+
+// inicializacaoo das crencas (serao atualizadas depois)
+larguraGrid(0).
+alturaGrid(0).
+
+/* Objetivos iniciais */
+
+
+
+/* Planos */
+
+// matriz(X,Y) - armazena a largura e a altura do grid 
++matriz(X,Y) : true
+	<- 	-+larguraGrid(X); -+alturaGrid(Y);
+      .print("ja sei o grid");
+      +start.
+
+// start - 
++start : true
+	<- 	!getNextMov.
+
++!getNextMov : plano(L) & LC = .length(L) & LC > 0
+	<- 	L = [P|_];
+      !irPara(P);
+      !!getNextMov.
+
++!getNextMov : plano(L) & LC = .length(L) & LC == 0
+	<- 	.print("-- Alvo alcancado! --").				
+
++!getNextMov : true
+	<- 	!!getNextMov.
+
++!irPara(P) : P = mover(X,Y) & pos(X,Y)
+	<-	?plano(L);
+      L = [P|T];
+      -+plano(T).
+		
++!irPara(P) : true
+	<-	P.
+
++novoPlano(L) : true
+	<- 	.print(L);
+		  -+plano(L).

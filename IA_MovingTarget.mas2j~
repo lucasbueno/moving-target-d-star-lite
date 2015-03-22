@@ -1,0 +1,12 @@
+/* Jason Project */
+
+MAS tarefa2 {
+    infrastructure: Centralised
+
+    environment: GridMovingTarget("1")
+
+    agents:
+		  agent,target;
+}
+
+

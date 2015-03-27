@@ -3,7 +3,11 @@
 MAS movingTargetSearch {
     infrastructure: Centralised
 
-    environment: GridMovingTarget("agent", "target")
+    // args: 0 = percentual de obstaculos
+    //       1 = numero de obstaculos modificados dinamicamente (k)
+    //       2 = nome do caçador
+    //       3 = nome do alvo
+    environment: GridMovingTarget(0.1, 1, "agent", "target")
 
     agents:
 		  agent;

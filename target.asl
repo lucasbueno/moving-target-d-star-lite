@@ -25,6 +25,9 @@ ticks(0).
 	<- 	?pos(X,Y);
       .print("pos(",X,",",Y,")");
       !getNextMov.
+
++!getNextMov : pos(X,Y) & target(X,Y)
+  <-  .print("-- Fui capturado! --").
   
 +!getNextMov : ticks(C) & ticksParaMover(T) & C < T
 	<- 	NovoC = C+1;

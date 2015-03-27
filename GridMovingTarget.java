@@ -7,6 +7,8 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class GridMovingTarget extends TimeSteppedEnvironment {
@@ -16,10 +18,9 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
   public static final int DELAY  = 500; // DELAY entre acoes em ms
   public static final int AGENT  = 0;
   public static final int TARGET = 1;
-  public static final int CLOSED = 16;
-  public static final int OPEN   = 32;
   public static final int TEXT   = 64;
   public static final boolean DISPLAY_TEXT = false;
+  public static final int OO = 1000;
 
   // Variáveis globais
   private Random        r = new Random();
@@ -29,11 +30,18 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
   private MarsModel     model;
   private MarsView      view;
   private ListTermImpl  path = null;
+  private List<State> OPEN = new ArrayList<State>();
+  private List<State> CLOSED = new ArrayList<State>();
+  private List<State> DELETED = new ArrayList<State>();
+  private State start = null;
+  private State goal = null;
+  private int[][] visited;
 
   /** Called before the MAS execution with the args informed in .mas2j */
   @Override
   public void init(String[] args) {
     super.init(new String[] { "1000" }); // set step timeout
+	
 
     setOverActionsPolicy(OverActionsPolicy.ignoreSecond);
     setSleep(DELAY);
@@ -49,6 +57,22 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 
     updateAgsPercept();    
     addPercept(Literal.parseLiteral("matriz(" + N + "," + N + ")"));
+	
+  }
+  
+  public void initializeVariables(){
+	Location agLoc = model.getAgPos(AGENT);
+    Location taLoc = model.getAgPos(TARGET);
+	
+	OPEN.clear();
+	CLOSED.clear();
+	
+	visited = new int[N][N];
+	start = new State(agLoc.x, agLoc.y, Math.abs(agLoc.x - taLoc.x) + Math.abs(agLoc.y - taLoc.y));
+	start.setG(0);	
+	goal = new State(taLoc.x, taLoc.y, 0);
+	
+	OPEN.add(start);	  
   }
 
   @Override
@@ -77,7 +101,7 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
         logger.info("movendo para (" + x + "," + y + ")");
         model.moveTo(agId, x-1, y-1);
       } else if (action.getFunctor().equals("search")) {
-        path = movingTargetDStar();
+        path = aStar();
       } else if (action.getFunctor().equals("nextMov")) {
         model.nextMov(agId);
       }
@@ -92,13 +116,16 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 
     Location agLoc = model.getAgPos(AGENT);
     Location taLoc = model.getAgPos(TARGET);
+	
     ListTermImpl path = new ListTermImpl();
-    
+	    
     for (int x = 0; x < N; x++) {
       for (int y = 0; y < N; y++) {
         costs[y][x] = Math.abs(x - taLoc.x) + Math.abs(y - taLoc.y);
       }
     }
+	
+	
 
     while (agLoc.x != taLoc.x || agLoc.y != taLoc.y) {
 
@@ -123,6 +150,104 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
     }
     return path;
   }  
+  
+  private ListTermImpl aStar(){
+	  
+	State smallestF = OPEN.get(0);
+	visited[smallestF.getX()][smallestF.getY()] = 1;
+	while(!(smallestF.getX() == goal.getX() && smallestF.getY() == goal.getY()) && (!OPEN.isEmpty())){
+		//logger.info("OPEN (" + (smallestF.getX()+1) + "," + (smallestF.getY()+1) + ")");
+		OPEN.remove(0);
+		CLOSED.add(smallestF);  
+		expand(smallestF);
+		if (!OPEN.isEmpty())
+			smallestF = OPEN.get(0);
+	}
+	
+	//logger.info("criando caminho");
+	ListTermImpl path = new ListTermImpl();
+	
+	State curr = smallestF;
+	while (curr != start) {
+
+	  State par = curr.getParent();
+	
+      if (curr.getX() < par.getX()) {
+        path.add(ASSyntax.createLiteral("left"));
+      } else if (curr.getX() > par.getX()) {
+        path.add(ASSyntax.createLiteral("right"));
+      } else if (curr.getY() < par.getY()) {
+        path.add(ASSyntax.createLiteral("up"));
+      } else if (curr.getY() > par.getY()) {
+        path.add(ASSyntax.createLiteral("down"));
+      }      
+	
+	  curr = par;
+    }
+	
+    return (ListTermImpl) path.reverse();
+  }
+  
+  public void addSorted(State s){
+	  int x = 0;
+	  while(x < OPEN.size() && (s.getF() > OPEN.get(x).getF())){
+		  x++;
+	  }
+		
+	  if(x == OPEN.size()){
+		  OPEN.add(s);
+	  } else {
+		OPEN.add(x, s);
+	  }
+  }
+  
+  public void expand(State s){
+	  int x = s.getX();
+	  int y = s.getY();
+	  if(x-1 >= 0 && visited[x-1][y] == 0){
+		  //logger.info("- expandindo (" + (x-1+1) + "," + (y+1) + ")");
+		  int h = Math.abs(x-1 - goal.getX()) + Math.abs(y - goal.getY());
+		  int cost = model.isFreeOfObstacle(x-1, y) ? 1 : OO;
+		  State newS = new State(x-1, y, h);
+		  newS.setParent(s);
+		  newS.setG(s.getG() + cost);
+		  addSorted(newS);
+		  visited[x-1][y] = 1;
+	  }
+	  
+	  if(x+1 < N  && visited[x+1][y] == 0){
+		  //logger.info("- expandindo (" + (x+1+1) + "," + (y+1) + ")");
+		  int h = Math.abs(x+1 - goal.getX()) + Math.abs(y - goal.getY());
+		  int cost = model.isFreeOfObstacle(x+1, y) ? 1 : OO;
+		  State newS = new State(x+1, y, h);
+		  newS.setParent(s);
+		  newS.setG(s.getG() + cost);
+		  addSorted(newS);
+		  visited[x+1][y] = 1;
+	  }
+	  
+	  if(y-1 >= 0 && visited[x][y-1] == 0){
+		  //logger.info("- expandindo (" + (x+1) + "," + (y-1+1) + ")");
+		  int h = Math.abs(x - goal.getX()) + Math.abs(y-1 - goal.getY());
+		  int cost = model.isFreeOfObstacle(x, y-1) ? 1 : OO;
+		  State newS = new State(x, y-1, h);
+		  newS.setParent(s);
+		  newS.setG(s.getG() + cost);
+		  addSorted(newS);
+		  visited[x][y-1] = 1;
+	  }
+	  
+	  if(y+1 < N  && visited[x][y+1] == 0){
+		  //logger.info("- expandindo (" + (x+1) + "," + (y+1+1) + ")");
+		  int h = Math.abs(x - goal.getX()) + Math.abs(y+1 - goal.getY());
+		  int cost = model.isFreeOfObstacle(x, y+1) ? 1 : OO;
+		  State newS = new State(x, y+1, h);
+		  newS.setParent(s);
+		  newS.setG(s.getG() + cost);
+		  addSorted(newS);
+		  visited[x][y+1] = 1;
+	  }
+  }
 
   /** Called before the end of MAS execution */
   @Override
@@ -156,9 +281,10 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
         "target(" + (tLoc.x+1) + "," + (tLoc.y+1) + ")");
     addPercept(agentsName[agId], targetPosPerc);
 
-    if (agId == AGENT && path != null) {
+    if (agId == AGENT) {
+	initializeVariables();
+	  path = aStar();
       addPercept(agentsName[agId], ASSyntax.createLiteral("novoPlano", path));
-      path = null;
     }
   }
 
@@ -316,22 +442,12 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
     @Override
     public void draw(Graphics g, int x, int y, int object) {
       switch(object) {
-        case GridMovingTarget.CLOSED: 
-          drawClosed(g, x, y);
-          break;
         case GridMovingTarget.TEXT: 
           drawText(g, x, y);
           break;
         default: 
           break;
       }
-    }
-
-    public void drawClosed(Graphics g, int x, int y) {
-      g.setColor(Color.cyan);
-      g.fillRect(x*cellSizeW, y*cellSizeH, cellSizeW, cellSizeH);
-      g.setColor(Color.lightGray);
-      g.drawRect(x*cellSizeW, y*cellSizeH, cellSizeW, cellSizeH);
     }
 
     @Override
@@ -365,6 +481,52 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
       }
     }
 
+  }
+  
+  class State {
+	  int x;
+	  int y;
+	  private int h; // heuristica
+	  private int g = OO; // custo para se chegar até aqui do estado inicial
+	  private State parent = null;
+	  
+	  public State(int x, int y, int h){
+		  this.x = x;
+		  this.y = y;
+		  this.h = h;
+	  }
+	  
+	  public int getX(){
+		  return x;
+	  }
+	  
+	  public int getY(){
+		  return y;
+	  }
+	  
+	  public int getH(){
+		  return h;
+	  }
+	  
+	  public int getG(){
+		  return g;
+	  }
+	  
+	  public State getParent(){
+		  return parent;
+	  }
+	  
+	  public void setG(int g){
+		  this.g = g;
+	  }
+	  
+	  public void setParent(State parent){
+		  this.parent = parent;
+	  }
+
+	  public int getF(){
+		return g + h;
+	  }	  
   }
 
 }

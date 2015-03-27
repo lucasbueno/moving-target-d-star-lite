@@ -7,7 +7,7 @@ MAS movingTargetSearch {
     //       1 = numero de obstaculos modificados dinamicamente (k)
     //       2 = nome do caçador
     //       3 = nome do alvo
-    environment: GridMovingTarget(0.1, 1, "agent", "target")
+    environment: GridMovingTarget(0.25, 2, "agent", "target")
 
     agents:
 		  agent;

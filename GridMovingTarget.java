@@ -33,6 +33,7 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
   private List<State> OPEN = new ArrayList<State>();
   private List<State> CLOSED = new ArrayList<State>();
   private List<State> DELETED = new ArrayList<State>();
+  private List<State> OTHERS = new ArrayList<State>();
   private State start = null;
   private State goal = null;
   private int[][] visited;
@@ -42,7 +43,6 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
   public void init(String[] args) {
     super.init(new String[] { "1000" }); // set step timeout
 	
-
     setOverActionsPolicy(OverActionsPolicy.ignoreSecond);
     setSleep(DELAY);
 
@@ -56,24 +56,63 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
     model.setView(view);
 
     updateAgsPercept();    
-    addPercept(Literal.parseLiteral("matriz(" + N + "," + N + ")"));
-	
+    addPercept(Literal.parseLiteral("matriz(" + N + "," + N + ")"));	
   }
   
   public void initializeVariables(){
-	Location agLoc = model.getAgPos(AGENT);
-    Location taLoc = model.getAgPos(TARGET);
 	
 	OPEN.clear();
 	CLOSED.clear();
-	
+	DELETED.clear();
+	OTHERS.clear();
 	visited = new int[N][N];
+	
+	for(int i = 1; i <= N; i++){
+		for(int j = 1; j <= N; j++){
+			
+			OTHERS.add(new State(i, j, Math.abs(i - j) + Math.abs(i - j)));
+		}
+	}
+	
+	Location agLoc = model.getAgPos(AGENT);
+    Location taLoc = model.getAgPos(TARGET);
 	start = new State(agLoc.x, agLoc.y, Math.abs(agLoc.x - taLoc.x) + Math.abs(agLoc.y - taLoc.y));
-	start.setG(0);	
+	start.setG(0);
 	goal = new State(taLoc.x, taLoc.y, 0);
 	
-	OPEN.add(start);	  
+	OPEN.add(start);
+	removeFromOthers(start.getX(), start.getY());
   }
+  
+	public void removeFromOthers(int x, int y){
+		
+		for(int i = 0; i < OTHERS.size(); i++){
+		
+			if(OTHERS.get(i).getX() == x){
+				
+				if(OTHERS.get(i).getY() == y){
+
+					OTHERS.remove(i);
+					break;
+				}
+			}
+		}
+	}
+	
+	public boolean isOnOthers(int x, int y){
+		
+		for(int i = 0; i < OTHERS.size(); i++){
+		
+			if(OTHERS.get(i).getX() == x){
+				
+				if(OTHERS.get(i).getY() == y){
+
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
   @Override
   protected void updateNumberOfAgents() {
@@ -95,11 +134,6 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
         model.moveUp(agId);
       } else if (action.getFunctor().equals("down")) {
         model.moveDown(agId);
-      } else if (action.getFunctor().equals("moveTo")) {
-        int x = (int) ((NumberTerm) action.getTerm(0)).solve();
-        int y = (int) ((NumberTerm) action.getTerm(1)).solve();
-        logger.info("movendo para (" + x + "," + y + ")");
-        model.moveTo(agId, x-1, y-1);
       } else if (action.getFunctor().equals("search")) {
         path = aStar();
       } else if (action.getFunctor().equals("nextMov")) {
@@ -108,7 +142,6 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
     } catch (Exception e) {
       logger.info("exception: " + e.getMessage());
     }
-
     return true;
   } 
 
@@ -118,36 +151,6 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
     Location taLoc = model.getAgPos(TARGET);
 	
     ListTermImpl path = new ListTermImpl();
-	    
-    for (int x = 0; x < N; x++) {
-      for (int y = 0; y < N; y++) {
-        costs[y][x] = Math.abs(x - taLoc.x) + Math.abs(y - taLoc.y);
-      }
-    }
-	
-	
-
-    while (agLoc.x != taLoc.x || agLoc.y != taLoc.y) {
-
-      if (agLoc.x < taLoc.x) {
-        agLoc.x++;
-        path.add(ASSyntax.createLiteral("right"));
-      } else if (agLoc.x > taLoc.x) {
-        agLoc.x--;
-        path.add(ASSyntax.createLiteral("left"));
-      } else if (agLoc.y < taLoc.y) {
-        agLoc.y++;
-        path.add(ASSyntax.createLiteral("down"));
-      } else if (agLoc.y > taLoc.y) {
-        agLoc.y--;
-        path.add(ASSyntax.createLiteral("up"));
-      }      
-
-      //path.add(ASSyntax.createLiteral("moveTo", 
-      //      ASSyntax.createNumber(agLoc.x+1),
-      //      ASSyntax.createNumber(agLoc.y+1)
-      //      ));
-    }
     return path;
   }  
   
@@ -156,7 +159,6 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 	State smallestF = OPEN.get(0);
 	visited[smallestF.getX()][smallestF.getY()] = 1;
 	while(!(smallestF.getX() == goal.getX() && smallestF.getY() == goal.getY()) && (!OPEN.isEmpty())){
-		//logger.info("OPEN (" + (smallestF.getX()+1) + "," + (smallestF.getY()+1) + ")");
 		OPEN.remove(0);
 		CLOSED.add(smallestF);  
 		expand(smallestF);
@@ -164,7 +166,6 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 			smallestF = OPEN.get(0);
 	}
 	
-	//logger.info("criando caminho");
 	ListTermImpl path = new ListTermImpl();
 	
 	State curr = smallestF;
@@ -204,8 +205,7 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
   public void expand(State s){
 	  int x = s.getX();
 	  int y = s.getY();
-	  if(x-1 >= 0 && visited[x-1][y] == 0){
-		  //logger.info("- expandindo (" + (x-1+1) + "," + (y+1) + ")");
+	  if(x-1 >= 0 && isOnOthers(x-1, y)){
 		  int h = Math.abs(x-1 - goal.getX()) + Math.abs(y - goal.getY());
 		  int cost = model.isFreeOfObstacle(x-1, y) ? 1 : OO;
 		  State newS = new State(x-1, y, h);
@@ -213,10 +213,10 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 		  newS.setG(s.getG() + cost);
 		  addSorted(newS);
 		  visited[x-1][y] = 1;
+		  removeFromOthers(x-1, y);
 	  }
 	  
-	  if(x+1 < N  && visited[x+1][y] == 0){
-		  //logger.info("- expandindo (" + (x+1+1) + "," + (y+1) + ")");
+	  if(x+1 < N  && isOnOthers(x+1, y)){
 		  int h = Math.abs(x+1 - goal.getX()) + Math.abs(y - goal.getY());
 		  int cost = model.isFreeOfObstacle(x+1, y) ? 1 : OO;
 		  State newS = new State(x+1, y, h);
@@ -224,10 +224,10 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 		  newS.setG(s.getG() + cost);
 		  addSorted(newS);
 		  visited[x+1][y] = 1;
+		  removeFromOthers(x+1, y);
 	  }
 	  
-	  if(y-1 >= 0 && visited[x][y-1] == 0){
-		  //logger.info("- expandindo (" + (x+1) + "," + (y-1+1) + ")");
+	  if(y-1 >= 0 && isOnOthers(x, y-1)){
 		  int h = Math.abs(x - goal.getX()) + Math.abs(y-1 - goal.getY());
 		  int cost = model.isFreeOfObstacle(x, y-1) ? 1 : OO;
 		  State newS = new State(x, y-1, h);
@@ -235,10 +235,10 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 		  newS.setG(s.getG() + cost);
 		  addSorted(newS);
 		  visited[x][y-1] = 1;
+		  removeFromOthers(x, y-1);
 	  }
 	  
-	  if(y+1 < N  && visited[x][y+1] == 0){
-		  //logger.info("- expandindo (" + (x+1) + "," + (y+1+1) + ")");
+	  if(y+1 < N  && isOnOthers(x, y+1)){
 		  int h = Math.abs(x - goal.getX()) + Math.abs(y+1 - goal.getY());
 		  int cost = model.isFreeOfObstacle(x, y+1) ? 1 : OO;
 		  State newS = new State(x, y+1, h);
@@ -246,6 +246,7 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 		  newS.setG(s.getG() + cost);
 		  addSorted(newS);
 		  visited[x][y+1] = 1;
+		  removeFromOthers(x, y+1);
 	  }
   }
 
@@ -489,6 +490,7 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 	  private int h; // heuristica
 	  private int g = OO; // custo para se chegar até aqui do estado inicial
 	  private State parent = null;
+	  private int rhs = 0;
 	  
 	  public State(int x, int y, int h){
 		  this.x = x;
@@ -526,7 +528,17 @@ public class GridMovingTarget extends TimeSteppedEnvironment {
 
 	  public int getF(){
 		return g + h;
+		//return Math.min(g, (rhs + h));
 	  }	  
+	  
+	  public int getRHS(){
+		  return this.rhs;
+	  }
+	  
+	  public void setRHS(int rhs){
+		  this.rhs = rhs;
+	  }
+	  
   }
 
 }

@@ -1,4 +1,5 @@
 
+package aStar;
 
 import jason.environment.grid.*;
 import java.util.*;
@@ -20,7 +21,7 @@ class MovingTargetModel extends GridWorldModel {
 
 		this.K = K;
 
-		//random.setSeed(123456); // gera o mesmo labirinto a cada execuçao
+		random.setSeed(7); // gera o mesmo labirinto a cada execuçao
 		generateNewWorld(blockPerc);
 
 		// posicao inicial aleatoria

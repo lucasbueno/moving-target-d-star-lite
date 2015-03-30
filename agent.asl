@@ -38,3 +38,6 @@ alturaGrid(0).
 +!irPara(P) : true
 	<-	.print(P);
 		P.
+		
+//+novoPlano(L) : true
+//	<-	.print(L).

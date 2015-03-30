@@ -1,4 +1,6 @@
 
+package MTDStarLite;
+
 import jason.environment.grid.*;
 import java.util.*;
 
@@ -13,12 +15,19 @@ import javax.swing.JLabel;
 
 class MovingTargetView extends GridWorldView {
 
-	GridMovingTarget world;
+  public static final int START  = 0;
+  public static final int GOAL = 1;
+  public static final boolean DISPLAY_TEXT 		= false;
+	public static final boolean DISPLAY_STATES 	= false;
+	public static final boolean DISPLAY_PATH 		= true;
+	
+	MovingTargetDStarLite world;
 	Font costsFont;
 	JLabel searches, moves, expanded, deleted, runtime;
 
-	public MovingTargetView(GridMovingTarget world, MovingTargetModel model) {
+	public MovingTargetView(MovingTargetDStarLite world, MovingTargetModel model) {
 		super(model, "Moving Target D* Lite", 600);
+		this.world = world;
 		defaultFont = new Font("Arial", Font.BOLD, 600/model.getHeight()/3); // change default font
 		setVisible(true);
 		getCanvas().setBackground(Color.white);
@@ -84,23 +93,23 @@ class MovingTargetView extends GridWorldView {
 
 	@Override
 	public void drawAgent(Graphics g, int x, int y, Color c, int id) {
-		if (id == GridMovingTarget.AGENT){
+		if (id == START){
 			c = Color.green;
-		}else{
+		} else{
 			c = Color.red;
 		}
 		super.drawAgent(g, x, y, c, -1);
 
 		g.setColor(Color.black);
-		if (id == GridMovingTarget.AGENT){
+		if (id == START){
 			drawString(g, x, y, defaultFont, "A");
-		}else if (id == GridMovingTarget.TARGET){
+		}else if (id == GOAL){
 			drawString(g, x, y, defaultFont, "T");
 		}
 	}
 	
 	public void drawClosed(Graphics g, int x, int y) {
-		if (GridMovingTarget.DISPLAY_STATES) {
+		if (DISPLAY_STATES) {
 			g.setColor(new Color(150, 150, 255));
 			g.fillRect(x*cellSizeW, y*cellSizeH, cellSizeW, cellSizeH);
 			g.setColor(Color.lightGray);
@@ -109,7 +118,7 @@ class MovingTargetView extends GridWorldView {
 	}
 	
 	public void drawOpen(Graphics g, int x, int y) {
-		if (GridMovingTarget.DISPLAY_STATES) {
+		if (DISPLAY_STATES) {
 			g.setColor(new Color(255, 150, 150));
 			g.fillRect(x*cellSizeW, y*cellSizeH, cellSizeW, cellSizeH);
 			g.setColor(Color.lightGray);
@@ -118,7 +127,7 @@ class MovingTargetView extends GridWorldView {
 	}
 	
 	public void drawPath(Graphics g, int x, int y) {
-		if (GridMovingTarget.DISPLAY_PATH) {
+		if (DISPLAY_PATH) {
 			int wsize = cellSizeW/5;
 			int hsize = cellSizeH/5;
 			int woffset = (cellSizeW - wsize)/2;
@@ -129,16 +138,16 @@ class MovingTargetView extends GridWorldView {
 	}
 	
 	public void drawText(Graphics g, int x, int y) {
-		if (GridMovingTarget.DISPLAY_TEXT) {
+		if (DISPLAY_TEXT) {
 			int fSize = cellSizeH/4;
 			if(costsFont == null)
 				costsFont = new Font("Arial", Font.BOLD, fSize);
 			g.setColor(Color.black);
 			g.setFont(costsFont);
-			if (world.getCost(x,y) >= 0)
+			/*if (world.getCost(x,y) >= 0)
 				g.drawString(String.valueOf(world.getCost(x,y)), x*cellSizeW, y*cellSizeH+fSize);
 			else
-				g.drawString("inf", x*cellSizeW, y*cellSizeH+fSize);
+				g.drawString("inf", x*cellSizeW, y*cellSizeH+fSize);*/
 		}
 	}
 

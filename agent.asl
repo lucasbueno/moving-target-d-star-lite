@@ -22,11 +22,7 @@ alturaGrid(0).
 +start : true
 	<- 	?pos(X,Y);
       .print("pos(",X,",",Y,")");
-      !getNextMov.
-	  
-//+target(X,Y) : true
-//	<- search.
-      
+      !getNextMov.      
 
 +!getNextMov : pos(X,Y) & target(X,Y)
 	<- 	.print("-- Alvo alcancado! --").			
@@ -38,19 +34,7 @@ alturaGrid(0).
 
 +!getNextMov : true
 	<- !!getNextMov.
-
   
 +!irPara(P) : true
-	<-	P;
-      //?plano(L);
-      //if (L = [P|T]) {
-      //  -+plano(T);
-      //  LC = .length(T);
-      //  .print("plano(",LC,") = ", T);
-      //}
-      .
-
-+novoPlano(L) : LC = .length(L)
-	<- 	.print("novoPlano(",LC,") = ", L);
-		  -+plano(L).
-      
+	<-	.print(P);
+		P.

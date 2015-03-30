@@ -1,6 +1,7 @@
  
 import java.util.Collections;
 import java.util.Arrays;
+import java.util.Random;
  
 /*
  * recursive backtracking algorithm
@@ -33,12 +34,6 @@ public class MazeGenerator {
 	public void displayBinary() {
 		int nx = x*2-1;
 		int ny = y*2-1;
-		// build the binary maze
-		for (int i = 0; i < ny; i++) {
-			for (int j = 0; j < nx; j++) {
-				binaryMaze[j][i] = isObstacle(j,i) ? 1 : 0;
-			}
-		}
 		// draw the binary maze
 		for (int i = 0; i < ny; i++) {
 			for (int j = 0; j < nx; j++) {
@@ -46,6 +41,7 @@ public class MazeGenerator {
 			}
 			System.out.println();
 		}
+		System.out.println();
 	}
  
 	public void display() {
@@ -152,6 +148,65 @@ public class MazeGenerator {
 			}
 		}
 	}
+	
+	public void block(int cx, int cy) {
+		int floodCounter = 1;
+		Random r = new Random();
+		int nx = x*2-1;
+		int ny = y*2-1;
+		
+		// block random DIR
+		int bx, by;
+		boolean similarNeighours = false;
+		do {
+			similarNeighours = false;
+			bx = r.nextInt(x);
+			by = r.nextInt(y);
+			if (bx > 0 && bx < nx-1 && binaryMaze[bx-1][by] == binaryMaze[bx+1][by])
+				similarNeighours = true;
+			if (by > 0 && by < ny-1 && binaryMaze[bx][by-1] == binaryMaze[bx][by+1])
+				similarNeighours = true;
+		} while(binaryMaze[bx][by] != 0 || similarNeighours == false);
+		
+		System.out.println("blocking ("+by+","+bx+")");
+		binaryMaze[bx][by] = 1;
+		
+		displayBinary();
+			
+		System.out.println("flood fill");
+		// flood fill
+		for (int i = 0; i < ny; i++) {
+			for (int j = 0; j < nx; j++) {
+				if (binaryMaze[j][i] == 1)
+					continue;
+				if (binaryMaze[j][i] == 0) {
+					fill(j, i, ++floodCounter, DIR.E);
+					displayBinary();
+				}
+			}
+		}
+		System.out.println("bloobs = " + (floodCounter-1));
+	}
+	
+	public void fill(int cx, int cy, int v, DIR lastDir) {
+		int bx = x*2-1;
+		int by = y*2-1;
+		
+		if (binaryMaze[cx][cy] == 0) {
+			binaryMaze[cx][cy] = v;
+			
+			DIR[] dirs = DIR.values();
+			for (DIR dir : dirs) {
+				if (dir == lastDir.opposite)
+					continue;
+				int nx = cx + dir.dx;
+				int ny = cy + dir.dy;
+				if (between(nx, bx) && between(ny, by)) {
+					fill(nx, ny, v, dir);
+				}
+			}
+		}
+	}
  
 	private static boolean between(int v, int upper) {
 		return (v >= 0) && (v < upper);
@@ -178,7 +233,6 @@ public class MazeGenerator {
 			this.dy = dy;
 		}
 	};
-  
 	
 	public static int[][] createMaze(int x, int y) {
 		return new MazeGenerator(x,y).getMaze();
@@ -192,7 +246,11 @@ public class MazeGenerator {
 		int x = args.length >= 1 ? (Integer.parseInt(args[0])) : 8;
 		int y = args.length >= 2 ? (Integer.parseInt(args[1])) : 8;
 		MazeGenerator maze = new MazeGenerator(x, y);
-		maze.displayDIR();
+		
+		maze.display();
+		maze.displayBinary();
+		
+		maze.block(x/2, y/2);
 		maze.display();
 		maze.displayBinary();
 	}

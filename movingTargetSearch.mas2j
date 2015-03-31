@@ -9,7 +9,7 @@ MAS movingTargetSearch {
     //       3 = nome do cacador
     //       4 = nome do alvo
     environment: MTDStarLite.MovingTargetDStarLite(15, 0.25, 2, "agent", "target")
-	//environment: aStar.MovingTargetAStar(30, 0.25, 2, "agent", "target")
+	//environment: aStar.MovingTargetAStar(50, 0.25, 0, "agent", "target")
 	
 	// seed: 68434 (15, 0.1, 0)    searches  moves  expanded  deleted  runtime 
 	// Optmized Basic MT-D*Lite:	 14       13       78       0       14ms 
@@ -25,7 +25,13 @@ MAS movingTargetSearch {
 	// Optmized Basic MT-D*Lite:	 12       11      206       0       36ms 
 	// Basic MT-D*Lite:	             12       11      310       0       46ms 
 	// A*: 				             12       11      321       0       19ms
-
+  
+  
+	// seed: 7 (30, 0.25, 3)      searches  moves  expanded  deleted  runtime 
+	// Optmized Basic MT-D*Lite:	 29       28      145       0       53ms 
+	// Basic MT-D*Lite:	             12       11      310       0       46ms 
+	// A*: 				             29       28      797       0       37ms
+  
     agents:
 	  agent;
       target;

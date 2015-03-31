@@ -5,7 +5,7 @@
 // inicializacao das crencas (serao atualizadas depois)
 larguraGrid(0).
 alturaGrid(0).
-ticksParaMover(5).
+ticksParaMover(2).
 ticks(0).
 
 /* Objetivos iniciais */

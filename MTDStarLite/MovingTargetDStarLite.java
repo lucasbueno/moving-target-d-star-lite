@@ -20,7 +20,7 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
   private int								N;   // largura do grid NxN 
   private int 							K;	
   private int								searches, moves, expandedStates, deletedStates;
-  private long 							runtimeSum;
+  private long 							runtimeSum, tm1, tm2;
   private int[][]       		costs;	
   private String[]      		agentsName; 
   private Logger        		logger = Logger.getLogger("movingTargetSearch.mas2j."+MovingTargetDStarLite.class.getName());
@@ -165,7 +165,6 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
         }
       }
 
-      searches++;
       runtimeSum += (tEnd-tStart);	
 
       addPercept(agentsName[agId], ASSyntax.createLiteral("novoPlano", (ListTermImpl) agentPath.reverse()));
@@ -329,6 +328,8 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
       return path;
 
     } else {
+      
+      searches++;
 
       System.out.println("Target moved out the path.");
 

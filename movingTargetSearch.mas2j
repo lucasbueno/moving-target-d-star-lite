@@ -3,13 +3,13 @@
 MAS movingTargetSearch {
     infrastructure: Centralised
 
-    // args: 0 = tamanho do grid
+  // args: 0 = tamanho do grid
 	//       1 = percentual de obstaculos
-    //       2 = numero de obstaculos modificados dinamicamente (k)
-    //       3 = nome do cacador
-    //       4 = nome do alvo
-    //environment: MTDStarLite.MovingTargetDStarLite(15, 0.25, 2, "agent", "target")
-	environment: aStar.MovingTargetAStar(15, 0.25, 2, "agent", "target")
+  //       2 = numero de obstaculos modificados dinamicamente (k)
+  //       3 = nome do cacador
+  //       4 = nome do alvo
+  environment: MTDStarLite.MovingTargetDStarLite(50, 0.25, 0, "agent", "target")
+  //environment: aStar.MovingTargetAStar(50, 0.25, 0, "agent", "target")
 	
 	// seed: 68434 (15, 0.1, 0)
 	// Basic MT-D*Lite:	searches=16, moves=15, expanded=236, deleted=0, runtime=24ms 
@@ -24,7 +24,7 @@ MAS movingTargetSearch {
 	// A*: 				searches=12, moves=11, expanded=321, deleted=0, runtime=20ms 
 
     agents:
-	  agent;
+	    agent;
       target;
 }
 

@@ -653,8 +653,8 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 	  }
 
 	  public int getF(){
-		return g + h;
-		//return Math.min(g, (rhs + h));
+		//return g + h;
+		return Math.min(g, (rhs + h));
 	  }	  
 	  
 	  public int getRHS(){

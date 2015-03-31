@@ -223,76 +223,95 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 		LinkedList<State> succ = new LinkedList<State>();
 		LinkedList<State> pred = new LinkedList<State>();
 			  
-		if(OPEN.isEmpty()) return;
+		System.out.println("<ComputeCostMinimalPath>");
 		
-		//System.out.println("> ComputeCostMinimalPath");
+		
+		if(OPEN.isEmpty()) {
+			System.out.println(" 1 OPEN empty");
+			return;
+		}
+		
 				
 		while(true) {
 			
 			if(OPEN.isEmpty()) {
-				//System.out.println("  OPEN empty");
+				System.out.println(" 2 OPEN empty");
 				break;
 			}
 			if(!((OPEN.peek().compareTo(calculateKey(goal)) < 0) // menor
 					|| goal.getRHS() > goal.getG())) {
-				//System.out.println("  peek " + OPEN.peek());
-				//System.out.println("  goal " + goal);
+				System.out.println("  peek " + OPEN.peek());
+				System.out.println("  goal " + goal);
 				break;
 			}
 			
-			State u = OPEN.poll();
+			State u = OPEN.peek();
 			State uNew = calculateKey(new State(u));
 			
-			//System.out.println("OPEN " + u);
+			//if(!model.isFreeOfObstacle(u.getX(), u.getY())) {
+				//System.out.println("OPEN " + u);
+				//System.out.println("WARNING! WARNING! WARNING!");
+			//}
 			
 			if(u.compareTo(uNew) < 0) { // u está desatualizado
 				//System.out.println("  1 ... ");
-				OPEN.add(u);
+				//OPEN.add(u);
+				u = calculateKey(u);
 				expandedStates++; 
 			} else if(u.getG() > u.getRHS()) { // melhorou o caminho
 				u.setG(u.getRHS());
 				//System.out.println("  2 ... " + u);
-				//OPEN.remove(u);
+				OPEN.remove(u);
 				CLOSED.add(u);
 				succ = findSucc(u);
 				for(State s : succ) {
-					/*if(!s.equals(start) && (s.getRHS() > u.getG() + u.getC())) {
+					int val = (u.getG() == OO) ? OO : u.getG() + 1;
+					if(!s.equals(start) && (s.getRHS() > val)) {
 						s.setParent(u);
-						s.setRHS(u.getG() + u.getC());
+						s.setRHS(val);
 						updateState(s);
-					}*/
-					updateState(s);
+					}
+					//updateState(s);
 					//System.out.println("  expand " + s);
 				}				
 				model.remove(MovingTargetModel.OPEN, u.getX(), u.getY());
 				model.add(MovingTargetModel.CLOSED, u.getX(), u.getY());
 			} else {	// g <= rhs, piorou
-				//System.out.println("  3 ... ");
 				u.setG(OO);
+				//System.out.println("  3 ... " + u);
 				succ = findSucc(u);
 				succ.add(u);
 				for(State s : succ) {
-					/*if(!s.equals(start) &&  u.equals(s.getParent())) {
+					if(!s.equals(start) &&  u.equals(s.getParent())) {
 						s.setRHS(OO);
-						pred = findPred(u);
+						s.setParent(null);
+						pred = findSucc(s);
 						for(State p : pred) {
-							if(p.getG() + 1 < s.getRHS()) {
-								s.setRHS(p.getG() + 1);
+							//System.out.print("      expand " + p);
+							int val = (p.getG() == OO) ? OO : p.getG() + 1;
+							if(val < s.getRHS()) {
+								s.setRHS(val);
 								s.setParent(p);
+								//System.out.println("  <= parent ");
+							} else {
+								//System.out.println();
 							}
-						}
-						updateState(s);							
-					}*/
+						}						
+					}
 					//System.out.println("  expand " + s);
 					updateState(s);
 				}
 			}
 			//System.out.println("  next");
 		}
-			//System.out.println("END");
+		
+		System.out.println("</ComputeCostMinimalPath>");
   }
 	
 	public void basicDeletion() {
+		
+		System.out.println("<BasicDeletion>");
+		
 		
 		LinkedList<State> pred = new LinkedList<State>();
 		
@@ -310,7 +329,72 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 		}
 		
 		updateState(lastStart);		
+		
+		System.out.println("</BasicDeletion>");
 	}
+	
+	private boolean isChildOf(State p, State c) {
+		while(!c.equals(p) && c.getParent() != null && c.equals(p.getParent())) {
+			if(c.getParent().equals(p))
+				return true;
+			c = c.getParent();
+		}
+		return false;
+	}
+		
+	public void optimizedDeletion() {
+		
+		System.out.println("<OptimizedDeletion>");
+		
+		LinkedList<State> pred;
+		
+		removeLastStatesFromModel();
+		
+		DELETED.clear();
+		
+		for(State s : OTHERS) {
+			if(isChildOf(lastStart, s)) {
+				s.setC(-1);
+			}				
+		}
+		
+		start.setParent(null);
+		
+		for(State s : OTHERS) {
+			if(s.getC() == -1 && !isChildOf(start, s)) {
+				s.setParent(null);
+				s.setRHS(OO);
+				s.setG(OO);
+				OPEN.remove(s);
+				CLOSED.remove(s);
+				model.remove(MovingTargetModel.OPEN, s.getX(), s.getY());
+				model.remove(MovingTargetModel.CLOSED, s.getX(), s.getY());
+				DELETED.add(s);
+				System.out.println("DELETED " + s);
+			}
+			s.setC(1);
+		}
+		
+		for(State s : DELETED) {
+			pred = findSucc(s);
+			for(State p : pred) {
+				int val = (p.getG() == OO) ? OO : p.getG() + 1;
+				if(s.getRHS() > val) {
+					s.setRHS(val);
+					s.setParent(p);
+				}
+			}
+			if(s.getRHS() < OO) {
+				OPEN.add(calculateKey(s));
+				model.add(MovingTargetModel.OPEN, s.getX(), s.getY());
+				System.out.println("OPEN " + s);
+			}
+		}	
+		
+		System.out.println("</OptimizedDeletion>");
+			
+	}
+	
 	
 	public LinkedList<State> movingTargetDStarLite(Location agLoc, Location taLoc) {
 		
@@ -325,36 +409,49 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 		if(K == 0 && path.contains(goal)) {
 			
 			System.out.println("Target still on the path.");
-			path.removeLast();
-			return path;
+			path.removeLast();						
+			return path;					
 			
-		} else {
+		} else if(K != 0 || !CLOSED.contains(goal)) {
 			
 			System.out.println("Target moved out the path.");
 			
 			km += heuristic(lastGoal);
 			
 			if(!lastStart.equals(start)) {
-				basicDeletion();
-				//optimizedDeletion();
+				//basicDeletion();
+				optimizedDeletion();
 			}
 			
 			//initializeVariables();
 			computeCostMinimalPath();		
 				
-			newPath = new LinkedList<State>();
+			/*newPath = new LinkedList<State>();
 			if(goal.getRHS() < OO) {
 				State cur = goal;
 				while (cur != start) {
+					//System.out.println("  path " + cur);
 					newPath.add(cur);
 					cur = cur.getParent();
 				}
 			} else {
 				System.out.println(">> Path not found.");
-			}
+			}*/
 			
 			lastStart = start;
 			lastGoal = goal;		
+		}
+		
+		newPath = new LinkedList<State>();
+		if(goal.getRHS() < OO) {
+			State cur = goal;
+			while (cur != null && cur != start) {
+				//System.out.println("  path " + cur);
+				newPath.add(cur);
+				cur = cur.getParent();
+			}
+		} else {
+			System.out.println(">> Path not found.");
 		}
 	
     return newPath;		
@@ -393,24 +490,31 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 	
 	
 	public void updateState(State u) {
-		/*if(u.getG() != u.getRHS() && OPEN.contains(u)) {
-			OPEN.remove(u);
+		boolean openContainsU = OPEN.contains(u);
+		//System.out.println("  u C OPEN ? " + openContainsU);
+		if(u.getG() != u.getRHS() && openContainsU) {
+			//OPEN.remove(u);
 			u = calculateKey(u);
-			OPEN.add(u);
-			expandedStates++; 
-		} else if(u.getG() != u.getRHS() && !OPEN.contains(u)) {
+			//OPEN.add(u);
+			//expandedStates++; 
+			//System.out.println("  update " + u);
+		} else if(u.getG() != u.getRHS() && !openContainsU) {
+			//System.out.println("  add " + u);
+			u = calculateKey(u);
 			OPEN.add(u);
 			expandedStates++; 
 			model.add(MovingTargetModel.OPEN, u.getX(), u.getY());
 			model.remove(MovingTargetModel.CLOSED, u.getX(), u.getY());
-		} else if(u.getG() == u.getRHS() && OPEN.contains(u)) {
+		} else if(u.getG() == u.getRHS() && openContainsU) {
+			//System.out.println("  remove " + u);
 			OPEN.remove(u);
 			CLOSED.add(u);
-			expandedStates++; 
-			model.add(MovingTargetModel.OPEN, u.getX(), u.getY());
-			model.add(MovingTargetModel.CLOSED, u.getX(), u.getY());
-		}*/
-		LinkedList<State> pred = new LinkedList<State>();
+			//expandedStates++; 
+			model.remove(MovingTargetModel.OPEN, u.getX(), u.getY());
+			if(model.isFreeOfObstacle(u.getX(), u.getY()))
+				model.add(MovingTargetModel.CLOSED, u.getX(), u.getY());
+		}
+		/*LinkedList<State> pred = new LinkedList<State>();
 		
 		if(!u.equals(start)) {
 			u.setRHS(OO);
@@ -442,7 +546,7 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 			CLOSED.remove(u);
 			model.add(MovingTargetModel.OPEN, u.getX(), u.getY());
 			model.remove(MovingTargetModel.CLOSED, u.getX(), u.getY());
-		}
+		}*/
 	}
 	
 	
@@ -523,24 +627,55 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 	public void changeWorld() {
 		
 		LinkedList<State> succ = new LinkedList<State>();
+		LinkedList<State> pred = new LinkedList<State>();
 			
 		for (int i = 0; i < K; i++) { 
 			// block states
 			Location blockLoc = model.nextFreeLoc();
 			model.add(MovingTargetModel.OBSTACLE, blockLoc); 
 			model.remove(MovingTargetModel.TEXT, blockLoc);
-			
-			State u = removeFromOthers(blockLoc.x, blockLoc.y);			
-			if(!u.equals(start)) {
+						
+			State u = removeFromOthers(blockLoc.x, blockLoc.y);
+			u.setRHS(OO);
+			u.setG(OO);
+						
+			//System.out.println("BLOCKING STATE " + u + "| OPEN.contains(s) = " + OPEN.contains(u));
+			/*if(!u.equals(start)) {
 				u.setRHS(OO);
-				u.setG(OO);
+				//u.setG(OO);
 				u.setParent(null);
 				succ = findSucc(u);
 				for(State s : succ) {
 					updateState(s);
 				}			
+			}*/
+			succ = findSucc(u);
+			//succ.add(u);
+			for(State s : succ) {
+				//System.out.println("  expand " + s);
+				if(!s.equals(start) && u.equals(s.getParent())) {
+					s.setRHS(OO);
+					s.setParent(null);
+					pred = findSucc(s);
+					for(State p : pred) {
+						//System.out.print("      expand " + p);
+						int val = (p.getG() == OO) ? OO : p.getG() + 1;
+						if(s.getRHS() > val) {
+							s.setRHS(val);
+							s.setParent(p);
+							//System.out.println("  <= parent ");
+						} else {
+							//System.out.println();
+						}
+					}
+					//System.out.println("  updating " + s);
+					updateState(s);				
+				}	
 			}
 			u = null;
+			
+			model.remove(MovingTargetModel.CLOSED, blockLoc);
+			model.remove(MovingTargetModel.OPEN, blockLoc);
 			
 			// unblock states
 			Location unblockLoc = null;
@@ -553,8 +688,21 @@ public class MovingTargetDStarLite extends TimeSteppedEnvironment {
 			model.remove(MovingTargetModel.OBSTACLE, unblockLoc);
 			model.add(MovingTargetModel.TEXT, unblockLoc);
 			
-			u = new State(unblockLoc.x, unblockLoc.y, 0);
+			u = new State(unblockLoc.x, unblockLoc.y, 0);			
+			//System.out.println("UNBLOCKING STATE " + u + "| OTHERS.contains(s) = " + OTHERS.contains(u));
+			
 			OTHERS.add(u);
+			succ = findSucc(u);
+			for(State s : succ) {
+				int val = (u.getG() == OO) ? OO : u.getG() + 1;
+				if(!s.equals(start) && (s.getRHS() > val)) {
+					s.setRHS(val);
+					s.setParent(u);
+					updateState(s);
+				}
+				//updateState(s);
+				//System.out.println("  expand " + s);
+			}
 		}
 	}
 

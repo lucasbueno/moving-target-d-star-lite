@@ -18,7 +18,7 @@ class MovingTargetView extends GridWorldView {
   public static final int START  = 0;
   public static final int GOAL = 1;
   public static final boolean DISPLAY_TEXT 		= false;
-	public static final boolean DISPLAY_STATES 	= false;
+	public static final boolean DISPLAY_STATES 	= true;
 	public static final boolean DISPLAY_PATH 		= true;
 	
 	MovingTargetDStarLite world;

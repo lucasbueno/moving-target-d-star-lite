@@ -8,20 +8,23 @@ MAS movingTargetSearch {
     //       2 = numero de obstaculos modificados dinamicamente (k)
     //       3 = nome do cacador
     //       4 = nome do alvo
-    //environment: MTDStarLite.MovingTargetDStarLite(15, 0.25, 2, "agent", "target")
-	environment: aStar.MovingTargetAStar(15, 0.25, 2, "agent", "target")
+    environment: MTDStarLite.MovingTargetDStarLite(15, 0.25, 2, "agent", "target")
+	//environment: aStar.MovingTargetAStar(30, 0.25, 2, "agent", "target")
 	
-	// seed: 68434 (15, 0.1, 0)
-	// Basic MT-D*Lite:	searches=16, moves=15, expanded=236, deleted=0, runtime=24ms 
-	// A*: 				searches=16, moves=15, expanded=357, deleted=0, runtime=20ms 
+	// seed: 68434 (15, 0.1, 0)    searches  moves  expanded  deleted  runtime 
+	// Optmized Basic MT-D*Lite:	 14       13       78       0       14ms 
+	// Basic MT-D*Lite:	             16       15      236       0       24ms 
+	// A*: 				             16       15      357       0       15ms
+		
+	// seed: 7 (15, 0.25, 0)      searches  moves  expanded  deleted  runtime 
+	// Optmized Basic MT-D*Lite:	 32       31      566       0       25ms 
+	// Basic MT-D*Lite:	             32       31      786       0       31ms 
+	// A*: 				             32       31     1988       0       30ms
 	
-	// seed: 7 (15, 0.25, 0)
-	// Basic MT-D*Lite:	searches=32, moves=31, expanded=786, deleted=0, runtime=31ms 
-	// A*: 				searches=32, moves=31, expanded=1988, deleted=0, runtime=30ms 
-	
-	// seed: 7 (15, 0.25, 2)
-	// Basic MT-D*Lite:	searches=12, moves=11, expanded=310, deleted=0, runtime=46ms 
-	// A*: 				searches=12, moves=11, expanded=321, deleted=0, runtime=20ms 
+	// seed: 7 (15, 0.25, 2)      searches  moves  expanded  deleted  runtime 
+	// Optmized Basic MT-D*Lite:	 12       11      206       0       36ms 
+	// Basic MT-D*Lite:	             12       11      310       0       46ms 
+	// A*: 				             12       11      321       0       19ms
 
     agents:
 	  agent;
